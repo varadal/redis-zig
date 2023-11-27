@@ -31,8 +31,12 @@ fn handle(stream: net.Stream) !void {
         const hold = try reader.readUntilDelimiter(&buf, '\n');
 
         if (hold.len > 0) {
-            if ((hold.len == 1) and (hold[0] == 'q')) return;
-            try redis_handle(hold, writer);
+            var tokens = std.mem.tokenizeSequence(u8, hold, " ");
+            const command = try tokens.next();
+            if ((command != null) and (command[0] == 'q') and (tokens.next() != null)) return;
+            try writer.print("curr: {s}\n", .{tokens.buffer});
+            try writer.print("peek: {s}\n", .{tokens.peek().?});
+            // try redis_handle(hold, writer);
         }
         if (count > 10) return;
     }
@@ -55,6 +59,8 @@ fn redis_handle(command: []u8, writer: net.Stream.Writer) !void {
 //  c. how to do async?
 // 2. move the server to its own file
 // 3. get started on the redis part
+//
+// NOTE: Don't overthink parsing. parse like bash does -> on space unless its enclosed in ""s
 
 // NOTE: tcp-server: https://beej.us/guide/bgnet/html/#a-simple-stream-server
 // NOTE: youtube video about creating a server in zig: https://www.youtube.com/watch?v=olOJbYP0ORE&list=PLS87DlLl8etzu2yg5c6a8dDB3wntFsRcj
